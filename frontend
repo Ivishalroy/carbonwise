@@ -1,0 +1,70 @@
+import React, { useState, useEffect } from 'react';
+
+function App() {
+  const [url, setUrl] = useState('');
+  const [analysis, setAnalysis] = useState('');
+  const [alternatives, setAlternatives] = useState('');
+
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(
+      "Hi! I’m CarbonWise, your personal AI eco-assistant. Let’s make your shopping greener and your carbon footprint smaller!"
+    );
+    synth.speak(utterance);
+  }, []);
+
+  const analyzeProduct = async () => {
+    const res = await fetch(`${process.env.REACT_APP_API_BASE}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productUrl: url })
+    });
+    const data = await res.json();
+    setAnalysis(data.analysis);
+  };
+
+  const getAlternatives = async () => {
+    const res = await fetch(`${process.env.REACT_APP_API_BASE}/alternatives`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productName: url })
+    });
+    const data = await res.json();
+    setAlternatives(data.alternatives);
+  };
+
+  return (
+    <div className="min-h-screen bg-green-50 flex flex-col items-center p-6">
+      <h1 className="text-4xl font-bold mb-4 text-green-800">CarbonWise</h1>
+      <input
+        className="p-2 border rounded w-full max-w-lg mb-4"
+        type="text"
+        placeholder="Paste Amazon product link..."
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+      />
+      <button
+        className="bg-green-600 text-white px-4 py-2 rounded mb-4"
+        onClick={analyzeProduct}
+      >Analyze Sustainability</button>
+
+      {analysis && (
+        <div className="bg-white shadow rounded p-4 max-w-lg mb-4">
+          <p>{analysis}</p>
+          <button
+            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={getAlternatives}
+          >Suggest Greener Alternatives</button>
+        </div>
+      )}
+
+      {alternatives && (
+        <div className="bg-white shadow rounded p-4 max-w-lg">
+          <p>{alternatives}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
