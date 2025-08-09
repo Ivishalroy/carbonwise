@@ -1,0 +1,73 @@
+import express from 'express';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+import cors from 'cors';
+
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.post('/analyze', async (req, res) => {
+  try {
+    const { productUrl } = req.body;
+
+    // Call OpenAI to analyze sustainability
+    const analysisPrompt = `You are CarbonWise, an AI that analyzes the sustainability and carbon footprint of a product. Given the product link: ${productUrl}, provide:
+    1. Sustainability rating out of 10
+    2. Estimated carbon footprint in kg CO2e
+    3. Short advice on greener choices`;
+
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: analysisPrompt }],
+        temperature: 0.7
+      })
+    });
+
+    const data = await aiResponse.json();
+    const analysis = data.choices[0].message.content;
+
+    res.json({ analysis });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to analyze product' });
+  }
+});
+
+app.post('/alternatives', async (req, res) => {
+  try {
+    const { productName } = req.body;
+    const altPrompt = `Suggest 3 alternative products to ${productName} that are more sustainable, include their name and a short reason why they are greener.`;
+
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: altPrompt }],
+        temperature: 0.7
+      })
+    });
+
+    const data = await aiResponse.json();
+    const alternatives = data.choices[0].message.content;
+
+    res.json({ alternatives });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch alternatives' });
+  }
+});
+
+app.listen(process.env.PORT || 4000, () => {
+  console.log(`CarbonWise backend running on port ${process.env.PORT || 4000}`);
+});
